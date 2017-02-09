@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<uml:Model xmi:version="20131001" xmlns:xmi="http://www.omg.org/spec/XMI/20131001" xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML" xmi:id="_8jsAwOcoEeaCPpj2FIuOxg" name="NewModel">
+  <packagedElement xmi:type="uml:Interface" xmi:id="_V_LjsOcpEeaCPpj2FIuOxg" name="Pdv">
+    <ownedOperation xmi:id="_XuQUoOcpEeaCPpj2FIuOxg" name="name"/>
+    <ownedOperation xmi:id="_aIa0gOcqEeaCPpj2FIuOxg" name="active"/>
+  </packagedElement>
+  <packagedElement xmi:type="uml:Interface" xmi:id="_axgqQOcpEeaCPpj2FIuOxg" name="Product"/>
+  <packagedElement xmi:type="uml:Association" xmi:id="_gAhs0OcpEeaCPpj2FIuOxg" name="pdvsToProducts" memberEnd="_gAvIMOcpEeaCPpj2FIuOxg _gAyLgecpEeaCPpj2FIuOxg" navigableOwnedEnd="_gAyLgecpEeaCPpj2FIuOxg">
+    <ownedEnd xmi:id="_gAvIMOcpEeaCPpj2FIuOxg" name="pdvs" type="_V_LjsOcpEeaCPpj2FIuOxg" association="_gAhs0OcpEeaCPpj2FIuOxg">
+      <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_gAxkcOcpEeaCPpj2FIuOxg"/>
+      <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_gAyLgOcpEeaCPpj2FIuOxg" value="*"/>
+    </ownedEnd>
+    <ownedEnd xmi:id="_gAyLgecpEeaCPpj2FIuOxg" name="produits à vendre" type="_axgqQOcpEeaCPpj2FIuOxg" aggregation="shared" association="_gAhs0OcpEeaCPpj2FIuOxg">
+      <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_gAzZoOcpEeaCPpj2FIuOxg"/>
+      <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_gAzZoecpEeaCPpj2FIuOxg" value="*"/>
+    </ownedEnd>
+  </packagedElement>
+  <packagedElement xmi:type="uml:Interface" xmi:id="_mt48sOcpEeaCPpj2FIuOxg" name="Session">
+    <ownedOperation xmi:id="_p7uxsOcpEeaCPpj2FIuOxg" name="reference"/>
+    <ownedOperation xmi:id="_rBxMsOcpEeaCPpj2FIuOxg" name="owner"/>
+    <ownedOperation xmi:id="_4itCIOcpEeaCPpj2FIuOxg" name="status"/>
+    <ownedOperation xmi:id="_LCjBkOcqEeaCPpj2FIuOxg" name="openedDate"/>
+    <ownedOperation xmi:id="_OM4PkOcqEeaCPpj2FIuOxg" name="closedDate"/>
+  </packagedElement>
+  <packagedElement xmi:type="uml:Association" xmi:id="_szOjQOcpEeaCPpj2FIuOxg" memberEnd="_szOjQecpEeaCPpj2FIuOxg _szPKUucpEeaCPpj2FIuOxg" navigableOwnedEnd="_szPKUucpEeaCPpj2FIuOxg">
+    <ownedEnd xmi:id="_szOjQecpEeaCPpj2FIuOxg" name="pdvs" type="_V_LjsOcpEeaCPpj2FIuOxg" association="_szOjQOcpEeaCPpj2FIuOxg">
+      <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_szPKUOcpEeaCPpj2FIuOxg"/>
+      <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_szPKUecpEeaCPpj2FIuOxg" value="1"/>
+    </ownedEnd>
+    <ownedEnd xmi:id="_szPKUucpEeaCPpj2FIuOxg" name="sessions" type="_mt48sOcpEeaCPpj2FIuOxg" aggregation="composite" association="_szOjQOcpEeaCPpj2FIuOxg">
+      <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_szPKU-cpEeaCPpj2FIuOxg"/>
+      <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_szPxYOcpEeaCPpj2FIuOxg" value="*"/>
+    </ownedEnd>
+  </packagedElement>
+  <packagedElement xmi:type="uml:Interface" xmi:id="_uMZVoOcpEeaCPpj2FIuOxg" name="Invoice"/>
+  <packagedElement xmi:type="uml:Association" xmi:id="_xxsBUOcpEeaCPpj2FIuOxg" memberEnd="_xxsoYOcpEeaCPpj2FIuOxg _xxt2gecpEeaCPpj2FIuOxg" navigableOwnedEnd="_xxt2gecpEeaCPpj2FIuOxg">
+    <ownedEnd xmi:id="_xxsoYOcpEeaCPpj2FIuOxg" name="sessions" type="_mt48sOcpEeaCPpj2FIuOxg" association="_xxsBUOcpEeaCPpj2FIuOxg">
+      <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_xxtPcOcpEeaCPpj2FIuOxg"/>
+      <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_xxt2gOcpEeaCPpj2FIuOxg" value="1"/>
+    </ownedEnd>
+    <ownedEnd xmi:id="_xxt2gecpEeaCPpj2FIuOxg" name="invoices" type="_uMZVoOcpEeaCPpj2FIuOxg" aggregation="composite" association="_xxsBUOcpEeaCPpj2FIuOxg">
+      <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_xxudkOcpEeaCPpj2FIuOxg"/>
+      <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_xxudkecpEeaCPpj2FIuOxg" value="*"/>
+    </ownedEnd>
+  </packagedElement>
+  <packagedElement xmi:type="uml:Interface" xmi:id="_yjoboOcpEeaCPpj2FIuOxg" name="Payment"/>
+  <packagedElement xmi:type="uml:Association" xmi:id="_1m7NgOcpEeaCPpj2FIuOxg" memberEnd="_1m7NgecpEeaCPpj2FIuOxg _1m70kucpEeaCPpj2FIuOxg" navigableOwnedEnd="_1m70kucpEeaCPpj2FIuOxg">
+    <ownedEnd xmi:id="_1m7NgecpEeaCPpj2FIuOxg" name="sessions" type="_mt48sOcpEeaCPpj2FIuOxg" association="_1m7NgOcpEeaCPpj2FIuOxg">
+      <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_1m70kOcpEeaCPpj2FIuOxg"/>
+      <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_1m70kecpEeaCPpj2FIuOxg" value="1"/>
+    </ownedEnd>
+    <ownedEnd xmi:id="_1m70kucpEeaCPpj2FIuOxg" name="payments" type="_yjoboOcpEeaCPpj2FIuOxg" aggregation="composite" association="_1m7NgOcpEeaCPpj2FIuOxg">
+      <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_1m70k-cpEeaCPpj2FIuOxg"/>
+      <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_1m8boOcpEeaCPpj2FIuOxg" value="*"/>
+    </ownedEnd>
+  </packagedElement>
+</uml:Model>
