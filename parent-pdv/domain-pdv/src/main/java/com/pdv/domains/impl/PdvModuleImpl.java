@@ -152,4 +152,14 @@ public class PdvModuleImpl implements PdvModule {
 		return new SessionsImpl(base, this);
 	}
 
+	@Override
+	public void activate(boolean active) throws IOException {
+		origin.activate(active);
+	}
+
+	@Override
+	public boolean isActive() {
+		return origin.isActive();
+	}
+
 }
