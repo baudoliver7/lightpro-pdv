@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class OrderProductEdited {
 	
 	private final UUID id;
-	private final int quantity;
+	private final double quantity;
 	private final double unitPrice;
 	private final double reductionAmount;
 	private final UUID productId;
@@ -20,7 +20,7 @@ public class OrderProductEdited {
 	
 	@JsonCreator
 	public OrderProductEdited(@JsonProperty("id") final UUID id,
-							  @JsonProperty("quantity") final int quantity, 
+							  @JsonProperty("quantity") final double quantity, 
 					    	  @JsonProperty("unitPrice") final double unitPrice,
 					    	  @JsonProperty("reductionAmount") final double reductionAmount,
 					    	  @JsonProperty("productId") final UUID productId,
@@ -38,7 +38,7 @@ public class OrderProductEdited {
 		return id;
 	}
 	
-	public int quantity(){
+	public double quantity(){
 		return quantity;
 	}
 	

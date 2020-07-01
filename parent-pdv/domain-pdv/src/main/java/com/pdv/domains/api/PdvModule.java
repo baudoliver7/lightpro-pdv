@@ -2,18 +2,19 @@ package com.pdv.domains.api;
 
 import java.io.IOException;
 
-import com.sales.domains.api.Customers;
-import com.sales.domains.api.Products;
-import com.securities.api.Membership;
+import com.sales.domains.api.ModulePdvs;
+import com.sales.domains.api.Sellers;
+import com.securities.api.Contacts;
 import com.securities.api.Module;
-import com.securities.api.Persons;
+import com.securities.api.PaymentModes;
 
 public interface PdvModule extends Module {
-	Pdvs pdvs() throws IOException;
-	Products productCatalog() throws IOException;
-	SessionPurchaseOrders orders(final Session session) throws IOException;
+	Pdvs pdvs() throws IOException;	
+	PdvPurchaseOrders orders() throws IOException;
 	Sessions sessions() throws IOException;
-	Persons persons() throws IOException;
-	Customers customers() throws IOException;
-	Membership membership() throws IOException;
+	Contacts contacts() throws IOException;
+	Cashiers cashiers() throws IOException;
+	PaymentModes paymentModes() throws IOException;
+	Sellers sellers() throws IOException;
+	ModulePdvs modulePdvs() throws IOException;
 }

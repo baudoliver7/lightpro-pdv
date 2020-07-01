@@ -4,17 +4,19 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import com.infrastructure.core.Recordable;
-import com.securities.api.Person;
+import com.infrastructure.core.Nonable;
+import com.securities.api.Contact;
 
-public interface Session extends Recordable<UUID, Session> {
+public interface Session extends Nonable {
+	UUID id();
 	String reference() throws IOException;
-	Person cashier() throws IOException;
+	Contact cashier() throws IOException;
 	LocalDateTime openedDate() throws IOException;
 	LocalDateTime closedDate() throws IOException;
 	SessionStatus status() throws IOException;
 	Pdv pdv() throws IOException;
-	SessionPurchaseOrders orders() throws IOException;
+	PdvPurchaseOrders orders() throws IOException;
 	
 	void terminate() throws IOException;
+	double turnover() throws IOException;
 }

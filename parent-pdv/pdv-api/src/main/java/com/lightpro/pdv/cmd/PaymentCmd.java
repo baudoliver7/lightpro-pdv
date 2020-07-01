@@ -8,12 +8,12 @@ import java.util.UUID;
 import com.common.utilities.convert.TimeConvert;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.sales.domains.api.PaymentMode;
 
 public class PaymentCmd {
 	
 	private final LocalDate paymentDate;
-	private final int paymentModeId;
+	private final UUID paymentModeId;
+	private final String transactionReference;
 	private final double montantVerse;
 	private final UUID orderId;
 	
@@ -23,7 +23,8 @@ public class PaymentCmd {
 	
 	@JsonCreator
 	public PaymentCmd(@JsonProperty("paymentDate") final Date paymentDate,
-					  @JsonProperty("paymentModeId") final int paymentModeId, 
+					  @JsonProperty("paymentModeId") final UUID paymentModeId,
+					  @JsonProperty("transactionReference") final String transactionReference, 
 					  @JsonProperty("montantVerse") final double montantVerse, 
 					  @JsonProperty("orderId") final UUID orderId){
 		
@@ -31,10 +32,11 @@ public class PaymentCmd {
 		this.paymentModeId = paymentModeId;
 		this.montantVerse = montantVerse;
 		this.orderId = orderId;		
+		this.transactionReference = transactionReference;
 	}
 	
-	public PaymentMode paymentMode(){
-		return PaymentMode.get(paymentModeId);
+	public UUID paymentModeId(){
+		return paymentModeId;
 	}
 	
 	public double montantVerse(){
@@ -47,5 +49,9 @@ public class PaymentCmd {
 	
 	public LocalDate paymentDate(){
 		return paymentDate;
+	}
+	
+	public String transactionReference(){
+		return transactionReference;
 	}
 }

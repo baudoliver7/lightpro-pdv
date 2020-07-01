@@ -3,80 +3,51 @@ package com.lightpro.pdv.vm;
 import java.io.IOException;
 import java.util.UUID;
 
-import com.fasterxml.jackson.annotation.JsonGetter;
 import com.sales.domains.api.Product;
-import com.securities.api.Tax;
 
-public class ProductVm {
+public final class ProductVm {
 	
-	private final transient Product origin;
+	public final UUID id;
+	public final String name;
+	public final String barCode;
+	public final String description;
+	public final UUID mesureUnitId;
+	public final String mesureUnitShortName;
+	public final String mesureUnitFullName;
+	public final String taxesDescription;
+	public final String pricingSummary;
+	public final int pricingModeId;
+	public final String pricingMode;
+	public final UUID categoryId;
+	public final String category;
+	public final double quantity;
+	public final String emballage;
+	public final String internalReference;
 	
 	public ProductVm(){
 		throw new UnsupportedOperationException("#ProductVm()");
 	}
 	
 	public ProductVm(final Product origin) {
-        this.origin = origin;
-    }
-	
-	@JsonGetter
-	public UUID getId(){
-		return origin.id();
-	}
-	
-	@JsonGetter
-	public String getName() throws IOException {
-		return origin.name();
-	}
-	
-	@JsonGetter
-	public String getBarCode() throws IOException {
-		return origin.barCode();
-	}
-	
-	@JsonGetter
-	public String getDescription() throws IOException {
-		return origin.description();
-	}
-	
-	@JsonGetter
-	public UUID getMesureUnitId() throws IOException {
-		return origin.unit().id();
-	}
-	
-	@JsonGetter
-	public String getMesureUnitShortName() throws IOException {
-		return origin.unit().shortName();
-	}
-	
-	@JsonGetter
-	public String getMesureUnitFullName() throws IOException {
-		return origin.unit().fullName();
-	}
-	
-	@JsonGetter
-	public String getTaxesDescription() throws IOException {
-		String description = "";
-		
-		for (Tax tax : origin.taxes().all()) {
-			description += String.format("%s (%d %s), ", tax.shortName(), tax.rate(), "%");
+		try {
+			this.id = origin.id();
+			this.name = origin.name();			
+			this.barCode = origin.barCode();
+			this.description = origin.description();
+			this.mesureUnitId = origin.unit().id();
+			this.mesureUnitShortName = origin.unit().shortName();
+			this.mesureUnitFullName = origin.unit().fullName();
+			this.taxesDescription = origin.taxes().toString();
+			this.pricingSummary = origin.pricing().toString();
+			this.pricingMode = origin.pricing().mode().toString();
+	        this.pricingModeId = origin.pricing().mode().id();
+	        this.category = origin.category().name();
+	        this.categoryId = origin.category().id();
+	        this.quantity = origin.quantity();
+	        this.emballage = origin.emballage();
+	        this.internalReference = origin.internalReference();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
-		
-		return description;
-	}
-	
-	@JsonGetter
-	public String getPriceSummary() throws IOException {
-		return origin.pricing().priceSummary();
-	}
-	
-	@JsonGetter
-	public int getModeId() throws IOException {
-		return origin.pricing().mode().id();
-	}
-	
-	@JsonGetter
-	public String getMode() throws IOException {
-		return origin.pricing().mode().toString();
-	}
+    }
 }

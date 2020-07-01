@@ -17,6 +17,7 @@ public class OrderEdited {
 	private final LocalDate expirationDate;
 	private final PaymentConditionStatus paymentCondition;
 	private final String cgv;
+	private final String description;
 	private final String notes;
 	private final UUID customerId;
 	private final UUID sellerId;
@@ -31,6 +32,7 @@ public class OrderEdited {
 						  @JsonProperty("expirationDate") final Date expirationDate, 
 						  @JsonProperty("paymentConditionId") final int paymentConditionId,
 				    	  @JsonProperty("cgv") final String cgv,
+				    	  @JsonProperty("description") final String description,
 				    	  @JsonProperty("notes") final String notes,
 				    	  @JsonProperty("sellerId") final UUID sellerId,
 				    	  @JsonProperty("customerId") final UUID customerId,
@@ -39,6 +41,7 @@ public class OrderEdited {
 		this.orderDate = TimeConvert.toLocalDate(orderDate, ZoneId.systemDefault());
 		this.expirationDate = TimeConvert.toLocalDate(expirationDate, ZoneId.systemDefault());
 		this.cgv = cgv;
+		this.description = description;
 		this.notes = notes;
 		this.sellerId = sellerId;
 		this.customerId = customerId;
@@ -60,6 +63,10 @@ public class OrderEdited {
 	
 	public String cgv(){
 		return cgv;
+	}
+	
+	public String description(){
+		return description;
 	}
 	
 	public String notes(){

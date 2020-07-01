@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 
-public class ResumeSalesVm {
+public final class ResumeSalesVm {
 	
 	private final transient double turnover;
 	private final transient String pdv;

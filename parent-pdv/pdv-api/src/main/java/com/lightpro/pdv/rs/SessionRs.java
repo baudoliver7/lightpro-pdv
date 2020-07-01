@@ -19,19 +19,28 @@ import javax.ws.rs.core.Response;
 import com.lightpro.pdv.cmd.OrderEdited;
 import com.lightpro.pdv.cmd.OrderProductEdited;
 import com.lightpro.pdv.cmd.PaymentCmd;
+import com.lightpro.pdv.vm.InvoiceVm;
 import com.lightpro.pdv.vm.OrderVm;
 import com.lightpro.pdv.vm.PaymentVm;
+import com.lightpro.pdv.vm.ResumeSalesVm;
 import com.lightpro.pdv.vm.SessionVm;
 import com.pdv.domains.api.Session;
-import com.pdv.domains.api.SessionPurchaseOrders;
-import com.sales.domains.api.Customer;
+import com.pdv.domains.api.PdvPurchaseOrder;
+import com.pdv.domains.api.PdvPurchaseOrderStatus;
+import com.pdv.domains.api.PdvPurchaseOrders;
+import com.sales.domains.api.Invoice;
+import com.sales.domains.api.InvoiceReceipt;
+import com.sales.domains.api.Invoices;
 import com.sales.domains.api.OrderProduct;
 import com.sales.domains.api.Payment;
+import com.sales.domains.api.PaymentConditionStatus;
 import com.sales.domains.api.Product;
 import com.sales.domains.api.PurchaseOrder;
-import com.sales.domains.api.PurchaseOrders;
+import com.sales.domains.api.Seller;
+import com.sales.domains.impl.RemiseNone;
+import com.securities.api.Contact;
+import com.securities.api.PaymentMode;
 import com.securities.api.Secured;
-import com.securities.api.User;
 
 @Path("/pdv/session")
 public class SessionRs extends PdvBaseRs {
@@ -79,6 +88,25 @@ public class SessionRs extends PdvBaseRs {
 	
 	@GET
 	@Secured
+	@Path("/{id}/order/{orderid}")
+	@Produces({MediaType.APPLICATION_JSON})
+	public Response getSingleOrder(@PathParam("id") final UUID id, @PathParam("orderid") final UUID orderId) throws IOException {	
+		
+		return createHttpResponse(
+				new Callable<Response>(){
+					@Override
+					public Response call() throws IOException {
+						
+						PurchaseOrder order = pdv().sessions().get(id)
+												   .orders().get(orderId);
+
+						return Response.ok(new OrderVm(order)).build();
+					}
+				});		
+	}
+	
+	@GET
+	@Secured
 	@Path("/{id}/order/in-progress")
 	@Produces({MediaType.APPLICATION_JSON})
 	public Response getOrdersInProgress(@PathParam("id") final UUID id) throws IOException {	
@@ -89,7 +117,7 @@ public class SessionRs extends PdvBaseRs {
 					public Response call() throws IOException {
 						
 						List<OrderVm> items = pdv().sessions().get(id)
-												   .orders().inProgress()
+												   .orders().with(PdvPurchaseOrderStatus.IN_USE).all()
 												   .stream()
 												   .map(m -> new OrderVm(m))
 												   .collect(Collectors.toList());
@@ -111,7 +139,7 @@ public class SessionRs extends PdvBaseRs {
 					public Response call() throws IOException {
 						
 						List<OrderVm> items = pdv().sessions().get(id)
-												   .orders().done()
+												   .orders().with(PdvPurchaseOrderStatus.DONE).all()
 												   .stream()
 												   .map(m -> new OrderVm(m))
 												   .collect(Collectors.toList());
@@ -132,10 +160,31 @@ public class SessionRs extends PdvBaseRs {
 					@Override
 					public Response call() throws Exception {
 						
-						Session session = pdv().sessions().get(id);
-						SessionPurchaseOrders orders = session.orders();
-						Payment payment = orders.pay(cmd.paymentDate(), cmd.orderId(), cmd.paymentMode(), cmd.montantVerse());											
+						Payment payment;
 						
+						Session session = pdv().sessions().get(id);
+						PurchaseOrder order = session.orders().get(orderId);
+						PaymentMode mode = pdv().paymentModes().build(cmd.paymentModeId());						
+						
+						Invoices invoices = order.invoices();
+						if(invoices.count() == 0){
+							payment = order.cash(cmd.paymentDate(), String.format("Paiement commande N°%s", order.reference()), cmd.montantVerse(), mode, cmd.transactionReference(), session.cashier());
+						}else{
+							// Effectuer le paiement sur la facture déjà générée
+							Invoice invoice = invoices.all().get(0);
+							
+							double paidAmount = invoice.saleAmount().totalAmountTtc(); // régler toute la facture
+							if(cmd.montantVerse() < paidAmount)
+								throw new IllegalArgumentException("Le montant réglé est inférieur au montant à payer !");
+														
+							InvoiceReceipt receipt = invoice.cash(cmd.paymentDate(), String.format("Encaissement %s", invoice.title()), paidAmount, mode, cmd.transactionReference(), session.cashier());
+							receipt.validate(false);
+							invoice.markPaid();
+							
+							payment = receipt;
+						}																
+												
+						log.info(String.format("Paiement de la commande N°%s", order.reference()));
 						return Response.ok(new PaymentVm(payment)).build();
 					}
 				});		
@@ -155,6 +204,7 @@ public class SessionRs extends PdvBaseRs {
 						Session session = pdv().sessions().get(id);
 						session.terminate();
 						
+						log.info(String.format("Clôture de la session %s", session.reference()));
 						return Response.status(Response.Status.OK).build();
 					}
 				});		
@@ -172,10 +222,10 @@ public class SessionRs extends PdvBaseRs {
 					public Response call() throws Exception {
 						
 						Session session = pdv().sessions().get(id);
-						PurchaseOrders containers = session.orders();
-						Customer customer = pdv().customers().build(cmd.customerId());
-						User seller = pdv().membership().get(cmd.sellerId());
-						PurchaseOrder item = containers.add(cmd.orderDate(), cmd.expirationDate(), cmd.paymentCondition(), cmd.cgv(), cmd.notes(), customer, seller);
+						PdvPurchaseOrders containers = session.orders();
+						Contact customer = pdv().contacts().build(cmd.customerId());
+						Seller seller = pdv().sellers().build(cmd.sellerId());
+						PurchaseOrder item = containers.add(cmd.orderDate(), cmd.expirationDate(), PaymentConditionStatus.DIRECT_PAYMENT, cmd.cgv(), cmd.description(), cmd.notes(), customer, seller, 0);
 						
 						for (OrderProductEdited ope : cmd.products()) {
 							OrderProduct op = item.products().build(ope.id());
@@ -184,15 +234,16 @@ public class SessionRs extends PdvBaseRs {
 								item.products().delete(op);
 							else
 							{
-								Product product = session.pdv().productsToSale().get(ope.productId());
+								Product product = session.pdv().products().get(ope.productId());
 								
-								if(op.isPresent())
-									op.update(ope.quantity(), 0, ope.reductionAmount(), null, product);
+								if(op.isNone())
+									item.products().add(product.category(), product, product.name(), product.description(), ope.quantity(), ope.unitPrice(), new RemiseNone(), product.taxes().all());									
 								else
-									item.products().add(ope.quantity(), 0, ope.reductionAmount(), null, product, true);
+									op.update(product.name(), product.description(), ope.quantity(), ope.unitPrice(), new RemiseNone(), product.taxes().all());
 							}								
 						}
 						
+						log.info(String.format("Création de la commande N° %s", item.reference()));
 						return Response.ok(new OrderVm(item)).build();
 					}
 				});		
@@ -210,10 +261,10 @@ public class SessionRs extends PdvBaseRs {
 					public Response call() throws Exception {
 						
 						Session session = pdv().sessions().get(id);
-						Customer customer = pdv().customers().build(cmd.customerId());
-						User seller = pdv().membership().get(cmd.sellerId());
+						Contact customer = pdv().contacts().build(cmd.customerId());
+						Seller seller = pdv().sellers().build(cmd.sellerId());
 						PurchaseOrder item = session.orders().get(orderId);
-						item.update(cmd.orderDate(), cmd.expirationDate(), cmd.paymentCondition(), cmd.cgv(), cmd.notes(), customer, seller);
+						item.update(cmd.orderDate(), cmd.expirationDate(), PaymentConditionStatus.DIRECT_PAYMENT, cmd.cgv(), cmd.description(), cmd.notes(), customer, seller, 0);
 						
 						for (OrderProductEdited ope : cmd.products()) {
 							OrderProduct op = item.products().build(ope.id());
@@ -222,15 +273,16 @@ public class SessionRs extends PdvBaseRs {
 								item.products().delete(op);
 							else
 							{
-								Product product = session.pdv().productsToSale().get(ope.productId());
+								Product product = session.pdv().products().get(ope.productId());
 								
-								if(op.isPresent())
-									op.update(ope.quantity(), 0, ope.reductionAmount(), null, product);
+								if(op.isNone())
+									item.products().add(product.category(), product, product.name(), product.description(), ope.quantity(), ope.unitPrice(), new RemiseNone(), product.taxes().all());									
 								else
-									item.products().add(ope.quantity(), 0, ope.reductionAmount(), null, product, true);
+									op.update(product.name(), product.description(), ope.quantity(), ope.unitPrice(), new RemiseNone(), product.taxes().all());
 							}								
 						}
 						
+						log.info(String.format("Mise à jour des données de la commande N° %s", item.reference()));
 						return Response.ok(new OrderVm(item)).build();
 					}
 				});		
@@ -247,12 +299,50 @@ public class SessionRs extends PdvBaseRs {
 					@Override
 					public Response call() throws IOException {
 						
-						PurchaseOrders containers = pdv().sessions().get(id).orders();
-						PurchaseOrder item = containers.get(orderId);
+						PdvPurchaseOrders containers = pdv().sessions().get(id).orders();
+						PdvPurchaseOrder item = containers.get(orderId);
 						containers.delete(item);
 						
 						return Response.status(Response.Status.OK).build();
 					}
 				});	
 	}
+	
+	@POST
+	@Secured
+	@Path("/{id}/order/{orderid}/invoice")
+	@Produces({MediaType.APPLICATION_JSON})
+	public Response makeInvoice(@PathParam("id") final UUID id, @PathParam("orderid") final UUID orderId) throws IOException {
+		
+		return createHttpResponse(
+				new Callable<Response>(){
+					@Override
+					public Response call() throws Exception {
+						
+						PdvPurchaseOrder purchaseOrder = pdv().sessions().get(id).orders().get(orderId);
+						Invoice invoice = purchaseOrder.generateInvoice();
+						
+						return Response.ok(new InvoiceVm(invoice)).build();
+					}
+				});		
+	}	
+
+	@GET
+	@Secured
+	@Path("/{id}/turnover")
+	@Produces({MediaType.APPLICATION_JSON})
+	public Response getTurnover(@PathParam("id") final UUID id) throws IOException {	
+		
+		return createHttpResponse(
+				new Callable<Response>(){
+					@Override
+					public Response call() throws IOException {
+						
+						Session session = pdv().sessions().get(id);
+						double turnover = session.turnover();
+
+						return Response.ok(new ResumeSalesVm(session.pdv().name(), turnover)).build();
+					}
+				});		
+	}	
 }

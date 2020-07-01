@@ -25,16 +25,18 @@ import org.apache.commons.lang3.StringUtils;
 import com.infrastructure.core.PaginationSet;
 import com.lightpro.pdv.cmd.PdvEdited;
 import com.lightpro.pdv.vm.PdvVm;
+import com.lightpro.pdv.vm.ProductCategoryVm;
 import com.lightpro.pdv.vm.ProductVm;
 import com.lightpro.pdv.vm.ResumeSalesVm;
 import com.lightpro.pdv.vm.SessionVm;
 import com.pdv.domains.api.Pdv;
-import com.pdv.domains.api.PdvFreeProducts;
+import com.pdv.domains.api.PdvProductCategories;
 import com.pdv.domains.api.PdvProducts;
 import com.pdv.domains.api.Pdvs;
 import com.pdv.domains.api.Session;
 import com.sales.domains.api.Product;
-import com.securities.api.Person;
+import com.sales.domains.api.ProductCategory;
+import com.securities.api.Contact;
 import com.securities.api.Secured;
 
 @Path("/pdv/pdv")
@@ -48,11 +50,10 @@ public class PdvRs extends PdvBaseRs {
 				new Callable<Response>(){
 					@Override
 					public Response call() throws IOException {
-						
-						List<PdvVm> items = pdv().pdvs().all()
-													 .stream()
-											 		 .map(m -> new PdvVm(m))
-											 		 .collect(Collectors.toList());
+												
+						List<PdvVm> items = pdvsEnabled().stream()
+										 		 .map(m -> new PdvVm(m))
+										 		 .collect(Collectors.toList());
 
 						return Response.ok(items).build();
 					}
@@ -74,11 +75,20 @@ public class PdvRs extends PdvBaseRs {
 						
 						Pdvs container = pdv().pdvs();
 						
-						List<PdvVm> itemsVm = container.find(page, pageSize, filter).stream()
-															 .map(m -> new PdvVm(m))
-															 .collect(Collectors.toList());
-													
-						int count = container.totalCount(filter);
+						List<PdvVm> itemsVm = new ArrayList<PdvVm>();
+						long count = 0;
+						
+						if(pdvsEnabled().size() == 1){
+							itemsVm.add(new PdvVm(pdvsEnabled().get(0)));
+							count = 0;
+						}else {
+							itemsVm = container.find(page, pageSize, filter).stream()
+									 .map(m -> new PdvVm(m))
+									 .collect(Collectors.toList());
+							
+							count = container.count(filter);
+						}
+																						
 						PaginationSet<PdvVm> pagedSet = new PaginationSet<PdvVm>(itemsVm, page, count);
 						
 						return Response.ok(pagedSet).build();
@@ -117,7 +127,7 @@ public class PdvRs extends PdvBaseRs {
 					public Response call() throws IOException {
 						
 						Session item = null;
-						Person person = pdv().persons().get(cashierId);
+						Contact person = pdv().contacts().get(cashierId);
 						Pdv pdv = pdv().pdvs().get(id);
 						
 						if(pdv.sessions().hasSessionInProgress(person)){
@@ -131,9 +141,9 @@ public class PdvRs extends PdvBaseRs {
 	
 	@GET
 	@Secured
-	@Path("/{id}/product-to-sale/search")
+	@Path("/{id}/product-category-to-sale/search")
 	@Produces({MediaType.APPLICATION_JSON})
-	public Response getProductsToSale(@PathParam("id") UUID id, 
+	public Response getProductCategoriesToSale(@PathParam("id") UUID id, 
 			@QueryParam("page") int page, 
 			@QueryParam("pageSize") int pageSize, 
 			@QueryParam("filter") String filter) throws IOException {	
@@ -143,14 +153,73 @@ public class PdvRs extends PdvBaseRs {
 					@Override
 					public Response call() throws IOException {
 						
-						PdvProducts container = pdv().pdvs().get(id).productsToSale();
+						PdvProductCategories container = pdv().pdvs().get(id).productCategories();
+						
+						List<ProductCategoryVm> itemsVm = container.find(page, pageSize, filter).stream()
+															 .map(m -> new ProductCategoryVm(m))
+															 .collect(Collectors.toList());
+													
+						long count = container.count(filter);
+						PaginationSet<ProductCategoryVm> pagedSet = new PaginationSet<ProductCategoryVm>(itemsVm, page, count);
+						
+						return Response.ok(pagedSet).build();
+					}
+				});		
+	}
+	
+	@GET
+	@Secured
+	@Path("/{id}/product-to-sale/search")
+	@Produces({MediaType.APPLICATION_JSON})
+	public Response getProductsToSale(@PathParam("id") UUID id, 
+			@QueryParam("page") int page, 
+			@QueryParam("pageSize") int pageSize, 
+			@QueryParam("filter") String filter,
+			@QueryParam("categoryId") UUID categoryId) throws IOException {	
+		
+		return createHttpResponse(
+				new Callable<Response>(){
+					@Override
+					public Response call() throws IOException {
+						
+						Pdv pdv = pdv().pdvs().get(id);
+						ProductCategory category = pdv.productCategories().build(categoryId);
+						PdvProducts container = pdv.products().of(category);
 						
 						List<ProductVm> itemsVm = container.find(page, pageSize, filter).stream()
 															 .map(m -> new ProductVm(m))
 															 .collect(Collectors.toList());
 													
-						int count = container.totalCount(filter);
+						long count = container.count(filter);
 						PaginationSet<ProductVm> pagedSet = new PaginationSet<ProductVm>(itemsVm, page, count);
+						
+						return Response.ok(pagedSet).build();
+					}
+				});		
+	}
+	
+	@GET
+	@Secured
+	@Path("/{id}/free-product-category/search")
+	@Produces({MediaType.APPLICATION_JSON})
+	public Response getFreeProductCategories(@PathParam("id") UUID id, 
+			@QueryParam("page") int page, 
+			@QueryParam("pageSize") int pageSize, 
+			@QueryParam("filter") String filter) throws IOException {	
+		
+		return createHttpResponse(
+				new Callable<Response>(){
+					@Override
+					public Response call() throws IOException {
+						
+						PdvProductCategories container = pdv().pdvs().get(id).productCategories().freeCategories();
+						
+						List<ProductCategoryVm> itemsVm = container.find(page, pageSize, filter).stream()
+															 .map(m -> new ProductCategoryVm(m))
+															 .collect(Collectors.toList());
+													
+						long count = container.count(filter);
+						PaginationSet<ProductCategoryVm> pagedSet = new PaginationSet<ProductCategoryVm>(itemsVm, page, count);
 						
 						return Response.ok(pagedSet).build();
 					}
@@ -164,20 +233,23 @@ public class PdvRs extends PdvBaseRs {
 	public Response getFreeProducts(@PathParam("id") UUID id, 
 			@QueryParam("page") int page, 
 			@QueryParam("pageSize") int pageSize, 
-			@QueryParam("filter") String filter) throws IOException {	
+			@QueryParam("filter") String filter,
+			@QueryParam("categoryId") UUID categoryId) throws IOException {	
 		
 		return createHttpResponse(
 				new Callable<Response>(){
 					@Override
 					public Response call() throws IOException {
 						
-						PdvFreeProducts container = pdv().pdvs().get(id).freeProducts();
+						Pdv pdv = pdv().pdvs().get(id);
+						ProductCategory category = pdv.productCategories().freeCategories().build(categoryId);
+						PdvProducts container = pdv.products().freeProducts().of(category);
 						
 						List<ProductVm> itemsVm = container.find(page, pageSize, filter).stream()
 															 .map(m -> new ProductVm(m))
 															 .collect(Collectors.toList());
 													
-						int count = container.totalCount(filter);
+						long count = container.count(filter);
 						PaginationSet<ProductVm> pagedSet = new PaginationSet<ProductVm>(itemsVm, page, count);
 						
 						return Response.ok(pagedSet).build();
@@ -197,9 +269,31 @@ public class PdvRs extends PdvBaseRs {
 					public Response call() throws IOException {
 						
 						List<ProductVm> items = pdv().pdvs().get(id)
-													 .productsToSale().all()
+													 .products().all()
 													 .stream()
 													 .map(m -> new ProductVm(m))
+													 .collect(Collectors.toList());
+
+						return Response.ok(items).build();
+					}
+				});		
+	}
+	
+	@GET
+	@Secured
+	@Path("/{id}/product-category-to-sale")
+	@Produces({MediaType.APPLICATION_JSON})
+	public Response getProductCategoriesToSaleSearch(@PathParam("id") UUID id) throws IOException {	
+		
+		return createHttpResponse(
+				new Callable<Response>(){
+					@Override
+					public Response call() throws IOException {
+						
+						List<ProductCategoryVm> items = pdv().pdvs().get(id)
+													 .productCategories().all()
+													 .stream()
+													 .map(m -> new ProductCategoryVm(m))
 													 .collect(Collectors.toList());
 
 						return Response.ok(items).build();
@@ -225,12 +319,10 @@ public class PdvRs extends PdvBaseRs {
 						
 						LocalDate start = LocalDate.parse(startStr, formatter);
 						LocalDate end = LocalDate.parse(endStr, formatter);
-						
-						Pdvs pdvs = pdv().pdvs();
-						
+
 						List<ResumeSalesVm> items = new ArrayList<ResumeSalesVm>();
 						
-						for (Pdv pdv : pdvs.all()) {
+						for (Pdv pdv : pdvsEnabled()) {
 							double turnover = pdv.turnover(start, end);
 							
 							if(pdv.active() || turnover > 0)
@@ -252,8 +344,9 @@ public class PdvRs extends PdvBaseRs {
 					@Override
 					public Response call() throws IOException {
 						
-						pdv().pdvs().add(cmd.name());
+						Pdv pdv = pdv().pdvs().add(cmd.name());
 						
+						log.info(String.format("Création du point de vente %s", pdv.name()));
 						return Response.status(Response.Status.OK).build();
 					}
 				});		
@@ -270,7 +363,13 @@ public class PdvRs extends PdvBaseRs {
 					@Override
 					public Response call() throws IOException {
 						
-						pdv().pdvs().get(id).activate(active);
+						Pdv item = pdv().pdvs().get(id);
+						item.activate(active);
+						
+						if(active)
+							log.info(String.format("Activation du point de vente %s", item.name()));
+						else
+							log.info(String.format("Désactivation du point de vente %s", item.name()));
 						
 						return Response.status(Response.Status.OK).build();
 					}
@@ -291,9 +390,10 @@ public class PdvRs extends PdvBaseRs {
 						UUID personId = UUID.fromString(personIdStr);
 						
 						Pdv pdv = pdv().pdvs().get(id);
-						Person person = pdv().persons().get(personId);
+						Contact person = pdv().contacts().get(personId);
 						Session session = pdv.sessions().add(person);
 						
+						log.info(String.format("Création d'une nouvelle session %s", pdv.name()));
 						return Response.ok(new SessionVm(session)).build();
 					}
 				});		
@@ -309,10 +409,33 @@ public class PdvRs extends PdvBaseRs {
 				new Callable<Response>(){
 					@Override
 					public Response call() throws IOException {
+																			
+						Pdv pdv = pdv().pdvs().get(id);
+						Product item = pdv.products().freeProducts().get(productId);
+						pdv.products().add(item);
 						
-						Product item = pdv().productCatalog().get(productId);								
-						pdv().pdvs().get(id).productsToSale().add(item);
+						log.info(String.format("Ajout du produit %s au point de vente %s", item.name(), pdv.name()));
+						return Response.status(Response.Status.OK).build();
+					}
+				});		
+	}
+	
+	@POST
+	@Secured
+	@Path("/{id}/product-category/{productcategoryid}")
+	@Produces({MediaType.APPLICATION_JSON})
+	public Response addProductCategory(@PathParam("id") final UUID id, @PathParam("productcategoryid") final UUID productCategoryId) throws IOException {
+		
+		return createHttpResponse(
+				new Callable<Response>(){
+					@Override
+					public Response call() throws IOException {
+													
+						Pdv pdv = pdv().pdvs().get(id);
+						ProductCategory item = pdv.productCategories().freeCategories().get(productCategoryId);
+						pdv.productCategories().add(item);
 						
+						log.info(String.format("Ajout de la catégorie de produit %s au point de vente %s", item.name(), pdv.name()));
 						return Response.status(Response.Status.OK).build();
 					}
 				});		
@@ -332,6 +455,7 @@ public class PdvRs extends PdvBaseRs {
 						Pdv item = pdv().pdvs().get(id);
 						item.update(cmd.name());
 						
+						log.info(String.format("Mise à jour des données du point de vente %s", item.name()));
 						return Response.status(Response.Status.OK).build();
 					}
 				});		
@@ -351,6 +475,7 @@ public class PdvRs extends PdvBaseRs {
 						Pdv item = pdv().pdvs().get(id);
 						pdv().pdvs().delete(item);
 						
+						log.info(String.format("Suppression du point de vente %s", item.name()));
 						return Response.status(Response.Status.OK).build();
 					}
 				});	
@@ -368,9 +493,31 @@ public class PdvRs extends PdvBaseRs {
 					public Response call() throws IOException {
 												
 						Pdv pdv = pdv().pdvs().get(id);
-						Product item = pdv.productsToSale().get(productId);
-						pdv.productsToSale().delete(item);
+						Product item = pdv.products().get(productId);
+						pdv.products().delete(item);
 						
+						log.info(String.format("Suppression du produit %s du point de vente %s", item.name(), pdv.name()));
+						return Response.status(Response.Status.OK).build();
+					}
+				});	
+	}
+	
+	@DELETE
+	@Secured
+	@Path("/{id}/product-category/{productcategoryid}")
+	@Produces({MediaType.APPLICATION_JSON})
+	public Response deletePdvProductCategory(@PathParam("id") final UUID id, @PathParam("productcategoryid") final UUID productCategoryId) throws IOException {
+		
+		return createHttpResponse(
+				new Callable<Response>(){
+					@Override
+					public Response call() throws IOException {
+												
+						Pdv pdv = pdv().pdvs().get(id);
+						ProductCategory item = pdv.productCategories().get(productCategoryId);
+						pdv.productCategories().delete(item);
+						
+						log.info(String.format("Suppression de la catégorie de produit %s du point de vente %s", item.name(), pdv.name()));
 						return Response.status(Response.Status.OK).build();
 					}
 				});	
